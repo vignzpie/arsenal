@@ -22,7 +22,3 @@ Then, in Claude Code, ask: *"Interview me for my /now page."*
 Optionally, give it links first: your current /now page, /now pages you like, something you've written. It reads them for tone and shape, checks its read with you, then asks its questions. The result is one markdown file, `now-interview-YYYY-MM-DD.md`, with a paste-ready draft, the interview notes, and anything left open. It's made to hand to an editor (or your own red pen) for polishing.
 
 The skill keeps a `learnings.md` next to itself. That file is about how the interview went, never about you. If you installed from a clone, pull requests with your learnings are welcome.
-
-## A warning about claude-session.sh
-
-It starts Claude with `--dangerously-skip-permissions`, which lets it run commands without asking first. I use it on a machine set aside for this. Read the script before you run it, and remove the flag if that isn't your setup.

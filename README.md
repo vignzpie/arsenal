@@ -8,3 +8,5 @@ Small tools I actually use with Claude Code.
 | [`claude/skills/now-interview/`](claude/skills/now-interview/) | A skill that interviews you, one question at a time, and drafts your [/now page](https://sive.rs/now). It learns your direction from links you give it and gets better with each run. |
 
 Each skill's folder has its own README with install steps.
+
+Changes go through a review gate. See [CONTRIBUTING](.github/CONTRIBUTING.md).

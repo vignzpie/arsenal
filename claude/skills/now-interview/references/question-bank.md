@@ -14,7 +14,7 @@ Questions marked ★ have historically been the strongest openers. The feedback 
 
 ## Pass 2 — Follow-ups by area
 
-Only go into an area the user has opened. One or two levels deep, then move on.
+Only go into an area the user has opened. Keep digging while the answers have energy, usually two or three levels, then move on.
 
 **Work / building**
 - What are you building, and who is it for?
@@ -71,6 +71,7 @@ One light question per untouched area. Accept "nothing there" happily.
 - ★ What's taking up real time outside work? (A clean line between work and the rest.)
 - What's on repeat right now?
 - Any festival, occasion or season coming up?
+- One short-term goal and one long-term goal?
 
 ## Refresh mode
 

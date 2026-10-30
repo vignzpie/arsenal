@@ -58,10 +58,11 @@ The interview runs in three loose passes. The question bank is in `references/qu
 
 **Pass 2 — Follow the threads.** For each area that came up (work, building, learning, place, body, people, making), keep digging while the answers have energy: usually two or three levels, sometimes more. Ask for the context behind the headline: why it matters to them, how it started, what's in the way. The context is what makes a line on the page worth reading. The best follow-ups are built from the user's own words: they said "finally" or "trying to" or laughed at something, so ask about that. Concrete beats abstract: "what did that look like last Tuesday?" gets better material than "how's that going?"
 
-**Pass 3 — The sweep.** Quickly check the areas that didn't come up on their own, with one light question each. "Anything you're reading or learning?" "Where are you based these days?" Include the two kinds of material people rarely think to offer, but love seeing on their page:
+**Pass 3 — The sweep.** Quickly check the areas that didn't come up on their own, with one light question each. "Anything you're reading or learning?" "Where are you based these days?" Include the kinds of material people rarely think to offer, but love seeing on their page:
 
 - **Texture:** small everyday things, like a song on repeat or something they're wearing, using or eating a lot.
 - **Context:** what the season around them is like: weather, traffic, a festival or occasion coming up.
+- **Goals:** one short-term goal and one long-term one, if they haven't come up already.
 
 Accept "nothing there" happily. A /now page with three real sections beats one with seven thin ones.
 
@@ -72,7 +73,7 @@ Accept "nothing there" happily. A /now page with three real sections beats one w
 
   > **User:** My laptop finally came back from repair. Took a month.
   > **Flat:** Noted. What else is taking up your time?
-  > **Present:** A whole month! What did you do without it, borrow one or go feral? And was it worth the wait?
+  > **Present:** A whole month! What did you do without it, borrow one or go feral?
 
   Keep it to one or two sentences, and keep it genuine. The point is being present, not cheering every answer.
 - If an answer is long and rich, reflect one line back before moving on ("So the move is the real headline."). It shows you heard, and lets them correct you cheaply.

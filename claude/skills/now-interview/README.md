@@ -26,7 +26,7 @@ Then, in Claude Code:
 
 What it sounds like (an illustrative example, not a real session):
 
-> **Claude:** What's eating most of your week right now?
+> **Claude:** What's taking up most of your week right now?
 >
 > **You:** Honestly, a side project that was supposed to be a weekend thing. It's been three months.
 >

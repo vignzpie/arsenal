@@ -36,7 +36,7 @@ Open short. Tell the user what's about to happen in two sentences (a few questio
 
 1. **Their current /now page**, if they have one. This turns the session into a refresh (see "Refresh mode").
 2. **One to three /now pages they like**, anyone's. This is the cheapest way to learn the direction they want.
-3. **Something they've written** (a blog post, a newsletter, a long tweet thread). This is how the draft gets to sound like *them*.
+3. **Something they've written** (a blog post, a newsletter, a long tweet thread). This is how the draft gets to sound like *them*. Take only the **voice** from it, not the format. A /now page has its own scannable shape, and a page laid out like a blog post reads like one.
 
 All three are optional. Ask for them once, together, and accept "skip". Don't nag.
 
@@ -54,16 +54,29 @@ If a link won't load, say which one, and move on. Don't guess at its contents.
 
 The interview runs in three loose passes. The question bank is in `references/question-bank.md`; use it as a well, not a script.
 
-**Pass 1 — The wide shot.** Two or three open questions to find where the energy is. "What's eating most of your week right now?" "If a friend asked how you are, and meant it, what would you say?" Listen for the thing they get animated about. That's usually the lead.
+**Pass 1 — The wide shot.** Two or three open questions to find where the energy is. "What's taking up most of your week right now?" "If a friend asked how you are, and meant it, what would you say?" Listen for the thing they get animated about. That's usually the lead.
 
-**Pass 2 — Follow the threads.** For each area that came up (work, building, learning, place, body, people, making), go one or two levels deeper. The best follow-ups are built from the user's own words: they said "finally" or "trying to" or laughed at something, so ask about that. Concrete beats abstract: "what did that look like last Tuesday?" gets better material than "how's that going?"
+**Pass 2 — Follow the threads.** For each area that came up (work, building, learning, place, body, people, making), keep digging while the answers have energy: usually two or three levels, sometimes more. Ask for the context behind the headline: why it matters to them, how it started, what's in the way. The context is what makes a line on the page worth reading. The best follow-ups are built from the user's own words: they said "finally" or "trying to" or laughed at something, so ask about that. Concrete beats abstract: "what did that look like last Tuesday?" gets better material than "how's that going?"
 
-**Pass 3 — The sweep.** Quickly check the areas that didn't come up on their own, with one light question each. "Anything you're reading or learning?" "Where are you based these days?" Accept "nothing there" happily. A /now page with three real sections beats one with seven thin ones.
+**Pass 3 — The sweep.** Quickly check the areas that didn't come up on their own, with one light question each. "Anything you're reading or learning?" "Where are you based these days?" Include the kinds of material people rarely think to offer, but love seeing on their page:
+
+- **Texture:** small everyday things, like a song on repeat or something they're wearing, using or eating a lot.
+- **Context:** what the season around them is like: weather, traffic, a festival or occasion coming up.
+- **Goals:** one short-term goal and one long-term one, if they haven't come up already.
+
+Accept "nothing there" happily. A /now page with three real sections beats one with seven thin ones.
 
 ### Pacing
 
 - Aim for **10-15 questions total**, 10-20 minutes. Tell the user they can say "that's enough" at any point and you'll draft from what you have.
-- If an answer is long and rich, reflect one line back before moving on ("So the move is the real headline. Got it."). It shows you heard, and lets them correct you cheaply.
+- **React like a person before you ask the next thing.** A flat "Noted." or "Captured." between questions makes the interview feel like a form being filled in, and people stop telling stories to a form. React to the specific detail they just gave, with whatever a friend would actually feel: amusement, sympathy, surprise, envy. Then let that reaction carry you into the follow-up.
+
+  > **User:** My laptop finally came back from repair. Took a month.
+  > **Flat:** Noted. What else is taking up your time?
+  > **Present:** A whole month! What did you do without it, borrow one or go feral?
+
+  Keep it to one or two sentences, and keep it genuine. The point is being present, not cheering every answer.
+- If an answer is long and rich, reflect one line back before moving on ("So the move is the real headline."). It shows you heard, and lets them correct you cheaply.
 - If answers are getting short, you're asking the wrong questions, or you've got enough. Try one different angle; if that's short too, move to the privacy pass.
 
 ### Things to listen for (and write down)
@@ -148,4 +161,4 @@ In the output's open threads, list what was dropped from the old page, so the us
 
 ## Tone of the interviewer
 
-Curious, light, a little warm. Like a friend who's good at asking questions, not a journalist and not a therapist. Short questions. No compliments on every answer ("Great answer!"). No pressure to share more than offered. If something heavy comes up, acknowledge it simply, don't dig, and ask whether it belongs on a public page at all.
+Curious, light and warm. Like a friend who's good at asking questions, not a journalist and not a therapist. Be emotionally present: laugh at the funny bits, wince at the annoying ones, be glad about the good news. Short questions. Warmth comes from reacting to the detail, not from praise: no "Great answer!" on every reply. No pressure to share more than offered. If something heavy comes up, acknowledge it simply, don't dig, and ask whether it belongs on a public page at all.

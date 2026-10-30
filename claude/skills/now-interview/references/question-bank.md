@@ -6,7 +6,7 @@ Questions marked ★ have historically been the strongest openers. The feedback 
 
 ## Pass 1 — The wide shot
 
-- ★ What's eating most of your week right now?
+- ★ What's taking up most of your week right now?
 - ★ If a friend you hadn't seen in a year asked how you are, and actually meant it, what would you tell them?
 - What's different about your life now compared to six months ago?
 - What are you looking forward to?
@@ -14,7 +14,7 @@ Questions marked ★ have historically been the strongest openers. The feedback 
 
 ## Pass 2 — Follow-ups by area
 
-Only go into an area the user has opened. One or two levels deep, then move on.
+Only go into an area the user has opened. Keep digging while the answers have energy, usually two or three levels, then move on.
 
 **Work / building**
 - What are you building, and who is it for?
@@ -43,9 +43,24 @@ Only go into an area the user has opened. One or two levels deep, then move on.
 - What are you making just because you like making it?
 - What's the hobby that's quietly taking over?
 
-**Saying no**
-- ★ What are you deliberately *not* doing right now?
+**On pause / saying no**
+- ★ What's on pause right now?
+- What's keeping it on pause?
 - Is there anything you'd like people to stop asking you to do?
+
+**Texture** (small everyday things; they often become the most-read lines)
+- What's on repeat right now? A song, an album, a podcast?
+- Anything you're wearing, using or eating a lot lately?
+- What's something small you're enjoying more than you expected?
+
+**Context** (the season around them; makes the page feel dated in a good way)
+- What's the weather doing where you are?
+- How's getting around these days? Traffic, commute, anything changed?
+- Any festival, occasion or season coming up?
+
+**Goals**
+- One short-term goal and one long-term goal?
+- What would make the next three months feel like a win?
 
 ## Pass 3 — The sweep
 
@@ -53,7 +68,10 @@ One light question per untouched area. Accept "nothing there" happily.
 
 - Anything you're reading or learning at the moment?
 - Where are you based these days?
-- Anything outside work taking up real time?
+- ★ What's taking up real time outside work? (A clean line between work and the rest.)
+- What's on repeat right now?
+- Any festival, occasion or season coming up?
+- One short-term goal and one long-term goal?
 
 ## Refresh mode
 
@@ -69,5 +87,5 @@ One light question per untouched area. Accept "nothing there" happily.
 ## Don't ask
 
 - Anything about relationships, health, money or family that the user hasn't raised first.
-- "What are your goals?" It gets résumé answers. Ask what they're doing instead.
+- An open-ended "What are your goals?" It gets résumé answers. The narrower "one short-term goal and one long-term goal?" works, and so does asking what they're doing.
 - Two questions in one message.

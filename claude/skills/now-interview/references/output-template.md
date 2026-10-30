@@ -34,7 +34,7 @@ Last updated: DD Month YYYY.
 the user's best lines as exact quotes. Struck items are replaced with
 [struck at the user's request] and nothing else. -->
 
-**Q1. What's eating most of your week right now?**
+**Q1. What's taking up most of your week right now?**
 Summary of the answer. > "Exact quote worth keeping."
 
 **Q2. ...**

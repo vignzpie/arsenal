@@ -17,7 +17,9 @@ When the user gives several pages they like, look for what they share, not the a
 
 ## For writing samples (blog post, newsletter, thread)
 
-You're reading for **voice**, not for content:
+You're reading for **voice**, not for content and not for format. A blog post's structure (narrative, long paragraphs, a callback ending) is the wrong shape for a /now page, even when its voice is exactly right. Say so in the play-back, e.g. "I'll borrow the voice, not the blog's layout."
+
+What to read for:
 
 - Sentence length and rhythm. Short punchy lines? Long winding ones? A mix?
 - Person and register. First person? Casual, formal, technical?

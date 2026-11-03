@@ -84,7 +84,7 @@ Run only the steps that are still needed. Check each one before doing it.
    - Verify both: `GH_CONFIG_DIR=<project>/.gh gh api user -q .login` and `ssh -T git@github-<name>`.
    - Give the lead the repo-local commit identity to set (`git config user.name` / `user.email`, e.g. the account's noreply address).
 5. **Discord (only if on).** Follow `references/discord.md`.
-6. **Launch.** `~/.claude/skills/team-up/scripts/launch.sh <project-dir>` (the script ships inside this skill's folder). It starts a tmux session named `cc-<name>` with Claude Code in a restart loop. Add `--discord` when Discord is on.
+6. **Launch.** `scripts/launch.sh <project-dir>` (relative to this skill's folder). It starts a tmux session named `cc-<name>` with Claude Code in a restart loop. Add `--discord` when Discord is on.
 7. **Get through boot.** Watch `tmux capture-pane -t cc-<name> -p`. The folder-trust prompt defaults to **"No, exit"**. Answer it with `Down` then `Enter`, never a bare `Enter`. Only do this for a folder you just created or the user trusts.
 8. **Verify with one turn.** Send the lead a short first instruction with `tmux send-keys -t cc-<name> '<text>' Enter`. If the text sits unsubmitted in the input box, send `Enter` once more. Ask the lead to read their definition and report in, on Discord if it's on. Confirm the reply actually arrived.
 

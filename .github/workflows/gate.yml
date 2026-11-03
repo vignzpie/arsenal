@@ -2,6 +2,8 @@ name: gate
 
 on:
   pull_request:
+    # 'edited' too: the check scans the PR title and description.
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
 

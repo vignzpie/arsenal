@@ -1,6 +1,7 @@
 ---
 name: now-interview
 description: Interview the user, one question at a time, to capture what they're focused on right now, and deliver it as a /now page draft plus the raw interview notes in one markdown file. Use this skill whenever the user wants to "write my /now page", "update my now page", "interview me for my now page", "what am I up to these days", mentions nownownow.com or Derek Sivers's /now idea, or asks Claude to interview them about their current life and focus. Also use for a refresh, when a /now page already exists and the user wants it brought up to date. The skill takes links as intake (the user's own /now page, other people's /now pages they like, samples of their writing), learns direction from them, and keeps a learnings file it reads at the start and updates at the end of every session so the interview gets better each run.
+license: Apache-2.0
 ---
 
 # Now Interview

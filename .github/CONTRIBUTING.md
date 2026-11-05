@@ -13,6 +13,7 @@ This is checked first, and any miss is a BLOCK. The repo is public, and search e
 - No personal details about anyone.
 - Files a tool updates on its own (like a skill's `learnings.md`) record how the tool worked, never facts about the person using it.
 - Examples are invented or generic, not lifted from real sessions.
+- **No private references anywhere public.** That covers code and docs, and also commit messages, PR titles and descriptions, review comments and issues. No private links (chat sessions, internal docs or dashboards), no names of private tools, agents, channels or machines, and no internal shorthand. Everything public should make sense to a stranger.
 
 ## 2. It earns its place
 

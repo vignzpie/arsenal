@@ -1,49 +1,96 @@
 # Contributing
 
-arsenal is a small set of tools I actually use with Claude Code. Every change goes through a review gate before it reaches `main`, whoever wrote it, me included. This is what the gate checks.
+arsenal is a small set of tools I actually use with Claude Code. It stays small on purpose. Every change goes through a review gate before it reaches `main`, whoever wrote it, me included. This page is the whole gate, and each rule gives its reason. If a reason doesn't fit your case, say so in the PR rather than working around the rule.
 
-A review ends in **PASS**, or **BLOCK** with a numbered list of exactly what has to change. A BLOCK isn't a rejection. Fix the list and it gets reviewed again.
+## How a change gets in
 
-## 1. Privacy and safety
+1. **Fixes and improvements:** open a PR. **A new tool:** open an issue first and say what it does and when you reach for it. Whether it fits is my call, and the issue is where I make it.
+2. One change per PR. In the description, say what changed and why, and paste the commands you ran with their output.
+3. The review ends in **PASS**, or **BLOCK** with a numbered list of exactly what has to change. A BLOCK isn't a rejection. Fix the list and the PR is re-reviewed.
+4. I merge. Nothing reaches `main` without a PASS.
 
-This is checked first, and any miss is a BLOCK. The repo is public, and search engines keep copies.
+A tool's **owner** is its author, unless its README says otherwise. Changing what a tool says or does needs the owner's OK on the PR. Fixes don't.
 
-- No secrets: tokens, keys, credentials.
-- No internal identifiers: chat or workspace IDs, internal hostnames, paths that reveal private infrastructure.
-- No personal details about anyone.
-- Files a tool updates on its own (like a skill's `learnings.md`) record how the tool worked, never facts about the person using it.
-- Examples are invented or generic, not lifted from real sessions.
-- **No private references anywhere public.** That covers code and docs, and also commit messages, PR titles and descriptions, review comments and issues. No private links (chat sessions, internal docs or dashboards), no names of private tools, agents, channels or machines, and no internal shorthand. Everything public should make sense to a stranger.
+If an AI agent wrote the change, that's fine: say so. Whoever opens the PR answers for it.
 
-## 2. It earns its place
+## The gate
 
-A tool I use, or one I've chosen to publish. Not a speculative or one-off script.
+Sections 1–4 block a merge. CI (`.github/scripts/check.sh`) runs the mechanical checks on every PR, and a reviewer reads for the rest.
 
-## 3. It works
+### 1. Nothing private, nothing unsafe
 
-Someone ran it and saw it behave. "Should work" doesn't pass.
+*Why: the repo is public. Forks, mirrors and search engines keep copies, and GitHub keeps every comment's edit history, so deleting something later doesn't make it private again.*
 
-- **Scripts:** `shellcheck` (or `zsh -n` for zsh), plus a dry run where possible.
-- **Skills:** the frontmatter is valid (`name`, `description`), and every file the skill references exists.
-- **Install steps:** they work from a clean copy.
+- **No secrets:** tokens, keys or credentials, expired ones included. GitHub's secret scanning and push protection are on as a backstop.
+- **No private references anywhere public:** code, docs, commit messages and trailers, branch names, PR titles and descriptions, comments and issues. That rules out:
+  - links to private chats, sessions, documents or dashboards;
+  - names of private tools, agents, machines, channels or accounts;
+  - chat IDs and internal hostnames;
+  - paths that reveal someone's setup;
+  - internal shorthand.
+  Test: would it make sense to a stranger who has only this repo?
+- **No personal details about private individuals.** Citing someone's public work is fine.
+- **Files a tool updates itself** (like a skill's `learnings.md`) record how the tool worked, never facts about the person using it. These entries come from real runs, which is expected, so the reviewer reads every line of them.
+- **Examples are invented**, not lifted from real sessions.
+- **No surprises when it runs.** Anything that deletes, overwrites, kills a process, skips permission prompts (including `allowed-tools` in a skill) or uses the network says so in the README. Destructive actions sit behind an explicit flag. Bash entries in `allowed-tools` are scoped, e.g. `Bash(git:*)` and never bare `Bash`. Nothing fetches and runs *unpinned* remote code. A pinned runner (`uvx tool@1.2.3`) is fine.
+- Your commit author email is public. Use your GitHub noreply address if you'd rather keep yours private.
 
-## 4. It's correct and consistent
+### 2. Skills follow the Agent Skills spec
 
-- A tool's files don't contradict each other (`SKILL.md`, references, README).
-- Anything reworded or renamed is updated everywhere.
-- Changes follow the tool's own rules, or say openly why not.
-- No placeholders or TODOs left in.
+*Why: the [Agent Skills spec](https://agentskills.io/specification) is the open format skills are written in. Following it keeps a skill portable, and a validator can check the core of it.*
 
-## 5. It's honest
+- **The spec's required rules, checked by `skills-ref validate`:**
+  - `name` is 1–64 characters of lowercase letters, digits and hyphens, with no leading, trailing or double hyphens, and it matches the folder name;
+  - `description` is 1–1024 characters and says what the skill does and when to use it.
+- **`license: Apache-2.0` in the frontmatter.** It's a spec field, and a skill copied out of this repo would otherwise lose its license.
+- **House rules, which go further than the spec:**
+  - `SKILL.md` stays under 500 lines, because its whole body loads on every run and longer detail belongs in `references/`, `scripts/` or `assets/`;
+  - file references are relative to the skill folder, with no chains (`SKILL.md` → `a.md` → `b.md`), because the skill may be installed anywhere.
 
-The README describes what the tool actually does, including its limits and anything destructive or permission-sensitive.
+### 3. It works
 
-## 6. It fits
+*Why: "should work" is the most common way a published tool turns out to be broken.*
 
-- Claude Code tools go in `claude/`. Skills go in `claude/skills/<name>/`, each with its own README.
-- The root README index has a one-line entry for every tool, and its links resolve.
-- Everything is covered by the [LICENSE](../LICENSE).
+- Someone ran it and watched it behave. The PR shows the command and its output.
+- **Shell:** `shellcheck` is clean for bash/sh and `zsh -n` for zsh, picked by the shebang. Add a dry run where you can.
+- **Scripts an agent runs** (a skill's `scripts/`) never prompt for input, have `--help`, and their errors say what to try next. An agent can't answer a prompt, so it just hangs. Scripts people run by hand say in their usage text what they'll ask for.
+- Every file a skill references exists, and install steps work from a fresh clone.
+
+### 4. It's honest, consistent and in its place
+
+*Why: the README is the only thing most people read before running a tool, and a predictable layout lets each tool be copied out on its own.*
+
+- The README describes what the tool actually does, including its limits, its requirements and everything on section 1's "no surprises" list.
+- A tool's files don't contradict each other. Anything renamed is updated everywhere, except history records like `learnings.md`. There are no TODOs or placeholders, but clearly marked template slots (`<name>`) are fine.
+- Tools go in `claude/`, and skills in `claude/skills/<name>/`, each with its own `README.md`. The root README has a one-line entry for each tool, and its links resolve.
+- Everything is under the [LICENSE](../LICENSE) (Apache-2.0). Contributions are accepted on its terms (its section 5). Third-party material keeps its own license, which must be compatible, and the tool's README names it.
+
+Existing tools are brought up to the gate the next time they change.
+
+## Advice (raised in review, not blocking)
+
+From the spec's guides on [writing skills](https://agentskills.io/skill-creation/best-practices), [scripts](https://agentskills.io/skill-creation/using-scripts), [descriptions](https://agentskills.io/skill-creation/optimizing-descriptions) and [evals](https://agentskills.io/skill-creation/evaluating-skills). The two that matter most:
+
+- **A gotchas section:** the concrete mistakes an agent makes without being told. Add to it each time you correct the agent.
+- **One default, not a menu:** pick one approach and mention alternatives briefly.
+
+Evals (`evals/evals.json`) are worth it for a skill that changes often, and optional.
 
 ## Not checked by the gate
 
-A tool's voice and content belong to whoever owns it. The gate covers safety, correctness and fit, not taste.
+Voice and content belong to the tool's owner. The gate covers safety, correctness and fit, not taste.
+
+## Checks you can run
+
+```sh
+# Everything CI runs. Needs shellcheck, zsh, and skills-ref (below) on your PATH.
+.github/scripts/check.sh --base origin/main
+
+# skills-ref, the spec's validator, installed in its own venv outside the repo.
+# Its README calls it a demo tool, so it's one check among several, not the whole gate.
+python3 -m venv ~/.venvs/skills-ref
+~/.venvs/skills-ref/bin/pip install 'git+https://github.com/agentskills/agentskills@69ef37e9424c0a7ea9dd2293b559e43ec8176379#subdirectory=skills-ref'
+export PATH="$HOME/.venvs/skills-ref/bin:$PATH"
+```
+
+The private check in `check.sh` matches patterns such as private links, long chat IDs, home paths and email addresses. It can't recognise a private name it has never seen, so read your own diff too.

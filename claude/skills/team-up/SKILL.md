@@ -1,6 +1,7 @@
 ---
 name: team-up
 description: Stand up a new Claude Code project with its own lead agent, end to end. Audits what already exists, asks only what's missing, presents one complete plan for approval, then builds it - project folder, agent definition, CLAUDE.md, GitHub identity, and a long-running tmux session for the lead, with an optional Discord bot so you can talk to the lead from your phone. Works on existing, half-set-up projects too; it fills gaps and never redoes what's there. Use when the user says "spin up a team", "new project team", "bring up a team for X", "team-up", "start a new project with an agent", or "I need an agent for this repo".
+license: Apache-2.0
 ---
 
 # team-up

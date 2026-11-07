@@ -54,14 +54,16 @@ for dir in claude/skills/*/; do
 done
 
 # template: a skill started from templates/skill/ must pass the spec once <name> is filled in
-if [ -d templates/skill ]; then
+if [ -f templates/skill/SKILL.md ]; then
   tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' EXIT
   mkdir "$tmp/example-skill"
   sed 's/<name>/example-skill/g' templates/skill/SKILL.md > "$tmp/example-skill/SKILL.md"
   if out="$(skills-ref validate "$tmp/example-skill" 2>&1)"; then ok "template: templates/skill passes the spec"; else fail "template: templates/skill/SKILL.md fails the spec once <name> is filled in: $out"; fi
-  if grep -qE '^license:[[:space:]]*Apache-2\.0[[:space:]]*$' templates/skill/SKILL.md; then ok "template: license"; else fail "template: templates/skill/SKILL.md needs 'license: Apache-2.0'"; fi
+  rm -rf "$tmp"
+  if sed -n '/^---$/,/^---$/p' templates/skill/SKILL.md | grep -qE '^license:[[:space:]]*Apache-2\.0[[:space:]]*$'; then ok "template: license"; else fail "template: templates/skill/SKILL.md frontmatter needs 'license: Apache-2.0'"; fi
   if [ -f templates/skill/README.md ]; then ok "template: README.md"; else fail "template: templates/skill has no README.md"; fi
+else
+  fail "template: templates/skill/SKILL.md is missing (CONTRIBUTING points new skills at it)"
 fi
 
 # scripts

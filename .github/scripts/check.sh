@@ -10,6 +10,7 @@ Usage: .github/scripts/check.sh [--base <ref>]
 
 Runs the gate's mechanical checks from the repo root:
   skills    skills-ref validate, license field, a README per skill, SKILL.md under 500 lines
+  template  templates/skill/ passes the spec once <name> is filled in
   scripts   shellcheck for bash/sh, zsh -n for zsh
   index     the root README lists every tool, and its local links resolve
   private   commits since <ref> (and PR_TITLE / PR_BODY if set) have no
@@ -51,6 +52,17 @@ for dir in claude/skills/*/; do
   lines="$(wc -l < "$dir/SKILL.md" 2>/dev/null || echo 0)"
   if [ "$lines" -lt 500 ]; then ok "size: $dir/SKILL.md ($lines lines)"; else fail "size: $dir/SKILL.md is $lines lines; the spec says under 500"; fi
 done
+
+# template: a skill started from templates/skill/ must pass the spec once <name> is filled in
+if [ -d templates/skill ]; then
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' EXIT
+  mkdir "$tmp/example-skill"
+  sed 's/<name>/example-skill/g' templates/skill/SKILL.md > "$tmp/example-skill/SKILL.md"
+  if out="$(skills-ref validate "$tmp/example-skill" 2>&1)"; then ok "template: templates/skill passes the spec"; else fail "template: templates/skill/SKILL.md fails the spec once <name> is filled in: $out"; fi
+  if grep -qE '^license:[[:space:]]*Apache-2\.0[[:space:]]*$' templates/skill/SKILL.md; then ok "template: license"; else fail "template: templates/skill/SKILL.md needs 'license: Apache-2.0'"; fi
+  if [ -f templates/skill/README.md ]; then ok "template: README.md"; else fail "template: templates/skill has no README.md"; fi
+fi
 
 # scripts
 while IFS= read -r f; do

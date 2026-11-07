@@ -4,7 +4,7 @@ arsenal is a small set of tools I actually use with Claude Code. It stays small 
 
 ## How a change gets in
 
-1. **Fixes and improvements:** open a PR. **A new tool:** open an issue first and say what it does and when you reach for it. Whether it fits is my call, and the issue is where I make it.
+1. **Fixes and improvements:** open a PR. **A new tool:** open an issue first and say what it does and when you reach for it. Whether it fits is my call, and the issue is where I make it. A new skill starts from [`templates/skill/`](../templates/skill/): copy it to `claude/skills/<name>/` and replace every `<…>` slot. It passes the spec as it stands, and CI checks that it stays that way.
 2. One change per PR. In the description, say what changed and why, and paste the commands you ran with their output.
 3. The review ends in **PASS**, or **BLOCK** with a numbered list of exactly what has to change. A BLOCK isn't a rejection. Fix the list and the PR is re-reviewed.
 4. I merge. Nothing reaches `main` without a PASS.

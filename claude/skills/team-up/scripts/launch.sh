@@ -12,7 +12,11 @@ for hook in "$here"/modules/*.sh; do
   [ -f "$hook" ] || continue
   # shellcheck source=/dev/null
   . "$hook"
-  available+=("$(basename "$hook" .sh)")
+  m="$(basename "$hook" .sh)"
+  for part in vars check env args; do
+    declare -F "${m//-/_}_$part" >/dev/null || { echo "Module hook $hook doesn't define ${m//-/_}_$part. Every hook needs _vars, _check, _env and _args (see modules/discord.sh)." >&2; exit 1; }
+  done
+  available+=("$m")
 done
 
 usage() {
@@ -32,8 +36,10 @@ Usage: $(basename "$0") <project-dir> [--module <name>]... [--continue] [--repla
                       files without asking. Only for a folder you trust.
 
 github-identity turns itself on when <project-dir>/.gh/hosts.yml exists.
-Every env var a module owns is unset for the lead unless that module is on, so a
-lead never inherits the caller's GitHub account or Discord bot.
+Every env var a module owns (GitHub: GH_CONFIG_DIR, GH_TOKEN, GITHUB_TOKEN, GH_HOST;
+Discord: DISCORD_STATE_DIR) is unset for the lead before modules are turned on.
+
+Use -- before a folder whose name starts with a dash.
 
 Exit codes: 0 started (or dry run), 1 a check failed, 2 bad usage.
 EOF
@@ -58,6 +64,9 @@ while [ $# -gt 0 ]; do
     --continue) continue_flag="--continue" ;;
     --replace) replace=1 ;;
     --dry-run) dry_run=1 ;;
+    --) [ $# -ge 2 ] || { echo "-- needs a <project-dir> after it." >&2; exit 2; }
+        [ -z "$dir_arg" ] || { echo "Only one <project-dir>, please (got '$dir_arg' and '$2'). Try --help." >&2; exit 2; }
+        dir_arg="$2"; shift ;;
     -*) echo "Unknown option: $1. Try --help." >&2; exit 2 ;;
     *) [ -z "$dir_arg" ] || { echo "Only one <project-dir>, please (got '$dir_arg' and '$1'). Try --help." >&2; exit 2; }
        dir_arg="$1" ;;
@@ -67,12 +76,12 @@ done
 
 [ -n "$dir_arg" ] || { usage >&2; exit 2; }
 [ -d "$dir_arg" ] || { echo "No such folder: $dir_arg. Create the project folder first, or check the path." >&2; exit 1; }
-project_dir="$(cd "$dir_arg" && pwd)"
+project_dir="$(cd -- "$dir_arg" && pwd)"
 
 command -v tmux >/dev/null 2>&1 || { echo "tmux is required. Install it (e.g. 'sudo apt install tmux' or 'brew install tmux') and re-run." >&2; exit 1; }
 command -v claude >/dev/null 2>&1 || { echo "claude (Claude Code) is required and isn't on PATH. Install it, or open a shell where 'claude' runs, and re-run." >&2; exit 1; }
 
-name="$(basename "$project_dir" | sed -E 's/[^A-Za-z0-9_-]+/-/g')"
+name="$(basename -- "$project_dir" | sed -E 's/[^A-Za-z0-9_-]+/-/g')"
 session="cc-${name}"
 
 # Modules that turn themselves on (github-identity when .gh/hosts.yml exists).

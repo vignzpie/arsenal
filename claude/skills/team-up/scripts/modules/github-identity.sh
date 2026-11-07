@@ -2,7 +2,8 @@
 # Launcher hook for the github-identity module (see references/github-identity.md).
 # Sourced by launch.sh; the function contract is described in modules/discord.sh.
 
-github_identity_vars() { echo GH_CONFIG_DIR; }
+# GH_TOKEN and GITHUB_TOKEN take priority over hosts.yml in gh, so they're cleared too.
+github_identity_vars() { echo GH_CONFIG_DIR GH_TOKEN GITHUB_TOKEN GH_HOST; }
 
 github_identity_auto() { [ -f "$1/.gh/hosts.yml" ]; }
 

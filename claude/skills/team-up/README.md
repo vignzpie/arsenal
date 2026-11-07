@@ -34,10 +34,10 @@ Anything optional is a module. Turn on only what you need, and the skill never r
 | `discord` | A Discord bot per project, so you can talk to the lead from your phone. Its own token and allowlist live in the project's `.discord/` folder, and the allowlist starts with just you. |
 | `unattended` | The lead runs with `--dangerously-skip-permissions`, so it works without stopping to ask. Useful when nobody is watching, risky anywhere you'd mind it changing things. Off by default. |
 
-**Adding a module** (e.g. Slack) touches nothing in the core:
+**Adding a module** (e.g. Slack) doesn't change the core flow:
 
 1. `references/<module>.md` with the same sections as the others: Ask, Audit, Plan, Build, Verify, Report, Gotchas.
-2. If it changes how the lead is launched, `scripts/modules/<module>.sh` defines four functions: `<module>_vars`, `_check`, `_env` and `_args`. The contract is at the top of `scripts/modules/discord.sh`. `launch.sh --module <module>` picks it up.
+2. If it changes how the lead is launched, `scripts/modules/<module>.sh` defines four functions: `<module>_vars`, `_check`, `_env` and `_args`, plus an optional `_auto` to turn itself on. The contract is at the top of `scripts/modules/discord.sh`. `launch.sh --module <module>` picks it up.
 3. A row in the Modules table in `SKILL.md`.
 
 ## Requirements
@@ -50,7 +50,7 @@ Anything optional is a module. Turn on only what you need, and the skill never r
 - **`unattended` skips permission prompts.** See the Modules table. It's off unless you turn it on (`--module unattended`, or the older `--skip-permissions`).
 - **The session restarts itself.** Claude Code runs in a loop inside tmux. `/exit` in the lead's session restarts it with its conversation intact, which is handy after an update. To stop it for good, kill the tmux session.
 - **Relaunching never kills a running lead by surprise.** If a `cc-<name>` tmux session is already running, `launch.sh` refuses and says so. Pass `--replace` to kill it and start a new one. `--dry-run` shows what it would do without changing anything.
-- **Each lead starts with a clean environment.** The launcher unsets the GitHub and Discord settings it manages, so a lead never inherits the account or bot of the shell that launched it.
+- **Each lead starts with a clean environment.** The launcher unsets the GitHub settings (`GH_CONFIG_DIR`, `GH_TOKEN`, `GITHUB_TOKEN`, `GH_HOST`) and the Discord setting (`DISCORD_STATE_DIR`) before turning modules on. A lead doesn't inherit the account or bot of the shell that launched it.
 
 ## Files
 

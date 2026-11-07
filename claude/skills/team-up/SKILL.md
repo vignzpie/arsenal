@@ -8,7 +8,7 @@ license: Apache-2.0
 
 You're setting up a project for the user: a folder on disk, a lead agent who owns the project, and a session that keeps that lead running. You build the **infrastructure**. The lead does the **project work**. Don't write the project's code, specs or commits for them. Don't clone their repo unless the user asks you to.
 
-The flow is five phases. Phases 0 and 2 are never skipped. Everything optional is a **module** (below). This file never names a module's details. Each module's reference does.
+The flow is five phases. Phases 0 and 2 are never skipped. Everything optional is a **module** (below). How each module is set up lives only in that module's reference, not here.
 
 ## Modules
 
@@ -29,6 +29,7 @@ Before asking anything, check what exists. Report it honestly: ✅ only for thin
 | Project folder | `ls -la <projects-root>/<name>` |
 | Project `CLAUDE.md` | read it; whose identity does it set? |
 | Agent definition | `ls ~/.claude/agents/` and the project's `.claude/agents/` |
+| Repo | `gh repo view <owner>/<repo>`, as the account the project will use. If that's not the default `gh` login, run `github-identity`'s Audit first |
 | Git state | `.git/` present? remotes? |
 | Session | `tmux ls` |
 | Modules already set up | a project folder for one (e.g. `.gh/`, `.discord/`) means that module is probably on: read its reference and run its Audit |
@@ -86,7 +87,7 @@ Run only the steps that are still needed. Check each one before doing it.
 4. **Modules.** For each module that's on, run its **Build**.
 5. **Launch.** `scripts/launch.sh <project-dir> --module <module> …` (relative to this skill's folder), with one `--module` for each module that's on and has a launcher hook. It starts a tmux session named `cc-<name>` with Claude Code in a restart loop. Run it with `--dry-run` first if you're unsure what it will do. It refuses to touch a session that's already running unless you pass `--replace`.
 6. **Get through boot.** Watch `tmux capture-pane -t cc-<name> -p`. The folder-trust prompt defaults to **"No, exit"**. Answer it with `Down` then `Enter`, never a bare `Enter`. Only do this for a folder you just created or the user trusts. Modules may add their own boot prompts (see their Gotchas).
-7. **Verify with one turn.** Send the lead a short first instruction with `tmux send-keys -t cc-<name> '<text>' Enter`. If the text sits unsubmitted in the input box, send `Enter` once more. Ask the lead to read their definition and report in. Then run each module's **Verify**.
+7. **Verify with one turn.** Send the lead a short first instruction with `tmux send-keys -t cc-<name> '<text>' Enter`. If the text sits unsubmitted in the input box, send `Enter` once more. Ask the lead to read their definition and report in, and confirm the reply actually arrived. Then run each module's **Verify**.
 
 ## Phase 4: Report
 

@@ -30,5 +30,5 @@ During the first-turn check, the lead doesn't stop at a permission prompt.
 
 ## Gotchas
 
-- **A first-use warning can appear at boot.** Claude Code may ask the user to accept bypass-permissions mode, and the safe answer is the default. Read the prompt in the pane. Accept it only if the user chose this module, and never with a bare `Enter`.
+- **A warning can appear at boot.** Claude Code may ask you to accept bypass-permissions mode. Its default is "No, exit", and the restart loop then shows it again every few seconds. Read the prompt in the pane. Accept it only if the user chose this module, and never with a bare `Enter`. Once it's accepted, it stays accepted.
 - **Only for a folder the user trusts**, on a machine they're fine with it changing.

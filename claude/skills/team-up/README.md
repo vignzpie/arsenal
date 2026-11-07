@@ -27,13 +27,13 @@ It builds the infrastructure only. The lead clones the repo and does the project
 ## Requirements
 
 - Claude Code, `tmux`, and `gh`.
-- For Discord: the official Discord channel plugin (`plugin:discord@claude-plugins-official`), [`bun`](https://bun.sh) (the plugin runs on it; without it the first `--discord` launch fails quietly), and a bot you create in the Discord Developer Portal. The skill walks you through it.
+- For Discord: the official Discord channel plugin (`plugin:discord@claude-plugins-official`), [`bun`](https://bun.sh) (the plugin runs on it; `launch.sh --discord` checks for it and stops with a pointer if it is missing), and a bot you create in the Discord Developer Portal. The skill walks you through it.
 
 ## Things to know
 
 - **`scripts/launch.sh --skip-permissions`** runs the lead with `--dangerously-skip-permissions`, so it acts without asking. That's useful for a lead that works unattended, and risky anywhere you'd mind it changing things. It's off unless you pass the flag.
 - **The session restarts itself.** Claude Code runs in a loop inside tmux. `/exit` in the lead's session restarts it with its conversation intact, which is handy after an update. To stop it for good, kill the tmux session.
-- **Relaunching replaces the session.** `launch.sh` kills any existing `cc-<name>` tmux session before starting a new one.
+- **Relaunching never kills a running lead by surprise.** If a `cc-<name>` tmux session is already running, `launch.sh` refuses and says so. Pass `--replace` to kill it and start a new one. `--dry-run` shows what it would do without changing anything.
 - **One bot per project.** Each lead's bot has its own token and allowlist in the project's `.discord/` folder. The allowlist starts with just you.
 - **A project can use its own GitHub account.** For example, a personal account for open-source work on a machine that's logged in as a work account. The skill sets up a project-local `gh` login and an SSH host alias, and it verifies both.
 
@@ -43,4 +43,4 @@ It builds the infrastructure only. The lead clones the repo and does the project
 |---|---|
 | `SKILL.md` | Instructions for Claude: the four phases and the rules |
 | `references/discord.md` | Bot creation, the allowlist, launching with Discord. Only read when Discord is on |
-| `scripts/launch.sh` | Starts or restarts a lead's tmux session (`--continue`, `--discord`, `--skip-permissions`) |
+| `scripts/launch.sh` | Starts or restarts a lead's tmux session (`--continue`, `--discord`, `--skip-permissions`, `--replace`, `--dry-run`; see `--help`) |

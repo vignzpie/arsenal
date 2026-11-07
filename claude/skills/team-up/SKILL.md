@@ -77,7 +77,7 @@ Account: <login>   Remote: <ssh url>
 Run only the steps that are still needed. Check each one before doing it.
 
 1. **Folder.** `mkdir -p <projects-root>/<name>/docs`.
-2. **Agent definition.** Write `~/.claude/agents/<lead>.md` (reusable across projects) or `<project>/.claude/agents/<lead>.md` (this project only). Frontmatter needs `name` and `description`. The body covers identity, what they own, how they work (branch per change, every merge to `main` goes past the user first), how they verify, and an **On session start** checklist. If the lead should clone the repo, put the exact clone and identity commands in the definition.
+2. **Agent definition.** Write `~/.claude/agents/<lead>.md`. Use `<project>/.claude/agents/<lead>.md` instead only if the user wants the lead to exist in this project alone. Frontmatter needs `name` and `description`. The body covers identity, what they own, how they work (branch per change, every merge to `main` goes past the user first), how they verify, and an **On session start** checklist. If the lead should clone the repo, put the exact clone and identity commands in the definition.
 3. **`CLAUDE.md`.** A few lines in the project folder: who the session is, a pointer to the agent definition, where the repo lives, which GitHub account to use, and which files must never be committed.
 4. **GitHub identity (only if it differs from the default).**
    - Log a separate `gh` into the project: `GH_CONFIG_DIR=<project>/.gh gh auth login`. The launcher exports `GH_CONFIG_DIR` when `.gh/hosts.yml` exists.
@@ -85,7 +85,7 @@ Run only the steps that are still needed. Check each one before doing it.
    - Verify both: `GH_CONFIG_DIR=<project>/.gh gh api user -q .login` and `ssh -T git@github-<name>`.
    - Give the lead the repo-local commit identity to set (`git config user.name` / `user.email`, e.g. the account's noreply address).
 5. **Discord (only if on).** Follow `references/discord.md`.
-6. **Launch.** `scripts/launch.sh <project-dir>` (relative to this skill's folder). It starts a tmux session named `cc-<name>` with Claude Code in a restart loop. Add `--discord` when Discord is on.
+6. **Launch.** `scripts/launch.sh <project-dir>` (relative to this skill's folder). It starts a tmux session named `cc-<name>` with Claude Code in a restart loop. Add `--discord` when Discord is on. Run it with `--dry-run` first if you're unsure what it will do. It refuses to touch a session that's already running unless you pass `--replace`.
 7. **Get through boot.** Watch `tmux capture-pane -t cc-<name> -p`. The folder-trust prompt defaults to **"No, exit"**. Answer it with `Down` then `Enter`, never a bare `Enter`. Only do this for a folder you just created or the user trusts.
 8. **Verify with one turn.** Send the lead a short first instruction with `tmux send-keys -t cc-<name> '<text>' Enter`. If the text sits unsubmitted in the input box, send `Enter` once more. Ask the lead to read their definition and report in, on Discord if it's on. Confirm the reply actually arrived.
 
@@ -108,9 +108,16 @@ Green-tick only what you checked in this phase.
 
 ## Later: restarting a lead
 
-- `scripts/launch.sh <project-dir> --continue` restarts the session and resumes the lead's last conversation, e.g. after a Claude Code update.
-- If the pane loops on "No conversation found to continue", the lead never had a saved conversation. Relaunch without `--continue`.
-- Before restarting, check the pane isn't mid-task (`esc to interrupt` visible).
+`scripts/launch.sh <project-dir> --continue --replace` restarts the session and resumes the lead's last conversation, e.g. after a Claude Code update. Check the pane first (see Gotchas).
+
+## Gotchas
+
+- **Audit GitHub as the project's account.** With the machine's default `gh` login, a private repo looks like it doesn't exist, and the audit reports ❌ for something that's there.
+- **The folder-trust prompt defaults to "No, exit".** A bare `Enter` quits the lead's session before it starts. Send `Down`, then `Enter`.
+- **Text sent with `tmux send-keys` can sit unsubmitted** in the input box. Read the pane back. If the text is still there, send `Enter` once more.
+- **Don't restart a lead mid-task.** If the pane shows `esc to interrupt`, the lead is working. Wait, or ask the user, before passing `--replace`.
+- **`--continue` needs a saved conversation.** On a lead that never had one, the pane loops on "No conversation found to continue". Relaunch with `--replace` and without `--continue`.
+- **A "sent" result isn't proof.** For Discord, read the channel back and see the lead's reply before you tick it.
 
 ## Rules
 

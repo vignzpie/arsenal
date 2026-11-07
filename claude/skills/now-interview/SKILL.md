@@ -169,8 +169,8 @@ Curious, light and warm. Like a friend who's good at asking questions, not a jou
 The mistakes this skill is most likely to make. Each one is already a rule above; this is the short list to check against.
 
 - **Sending several questions at once.** One question, then wait. A numbered list turns the interview into a form (Step 2).
-- **Copying a writing sample's format.** Take the voice only. The /now page keeps its own scannable shape (Step 1, from a real session's correction).
+- **Copying a writing sample's format.** Take the voice only. The /now page keeps its own scannable shape (Step 1).
 - **Guessing at a link that didn't load.** Say which one failed and move on (Step 1).
 - **Leaving a struck item in the notes.** It comes out of the page *and* the raw notes, replaced by `[struck at the user's request]` (Step 3).
-- **Writing about the user in `learnings.md`.** Only how the interview went. The file is public (Step 7).
-- **Editing `SKILL.md` or the references without a yes.** `learnings.md` is the only file you change without asking (Step 7).
+- **Writing about the user in `learnings.md`.** Only how the interview went. The file may be shared publicly (Step 7).
+- **Editing `SKILL.md` or the references without a yes.** `learnings.md` is the only file you append to without asking (Step 7).

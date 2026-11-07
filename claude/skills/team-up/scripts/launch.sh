@@ -22,19 +22,14 @@ Usage: $(basename "$0") <project-dir> [--continue] [--discord] [--skip-permissio
                       replace a running session. Changes nothing.
 
 If <project-dir>/.gh/hosts.yml exists, GH_CONFIG_DIR points at it, so gh acts as
-the project's own GitHub account.
+the project's own GitHub account. Otherwise GH_CONFIG_DIR and DISCORD_STATE_DIR
+are unset, so the lead never inherits the caller's account or bot.
 
 Exit codes: 0 started (or dry run), 1 a check failed, 2 bad usage.
 EOF2
 }
 
-[ $# -ge 1 ] || { usage >&2; exit 2; }
-case "$1" in -h|--help) usage; exit 0 ;; esac
-
-[ -d "$1" ] || { echo "No such folder: $1. Create the project folder first, or check the path." >&2; exit 1; }
-project_dir="$(cd "$1" && pwd)"
-shift
-
+dir_arg=""
 continue_flag=""
 discord=0
 perm_flag=""
@@ -42,15 +37,21 @@ replace=0
 dry_run=0
 for arg in "$@"; do
   case "$arg" in
+    -h|--help) usage; exit 0 ;;
     --continue) continue_flag="--continue" ;;
     --discord) discord=1 ;;
     --skip-permissions) perm_flag="--dangerously-skip-permissions" ;;
     --replace) replace=1 ;;
     --dry-run) dry_run=1 ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "Unknown option: $arg. Try --help." >&2; exit 2 ;;
+    -*) echo "Unknown option: $arg. Try --help." >&2; exit 2 ;;
+    *) [ -z "$dir_arg" ] || { echo "Only one <project-dir>, please (got '$dir_arg' and '$arg'). Try --help." >&2; exit 2; }
+       dir_arg="$arg" ;;
   esac
 done
+
+[ -n "$dir_arg" ] || { usage >&2; exit 2; }
+[ -d "$dir_arg" ] || { echo "No such folder: $dir_arg. Create the project folder first, or check the path." >&2; exit 1; }
+project_dir="$(cd "$dir_arg" && pwd)"
 
 command -v tmux >/dev/null 2>&1 || { echo "tmux is required. Install it (e.g. 'sudo apt install tmux' or 'brew install tmux') and re-run." >&2; exit 1; }
 command -v claude >/dev/null 2>&1 || { echo "claude (Claude Code) is required and isn't on PATH. Install it, or open a shell where 'claude' runs, and re-run." >&2; exit 1; }
@@ -58,7 +59,9 @@ command -v claude >/dev/null 2>&1 || { echo "claude (Claude Code) is required an
 name="$(basename "$project_dir" | sed -E 's/[^A-Za-z0-9_-]+/-/g')"
 session="cc-${name}"
 
-env_setup=""
+# Start clean: a new tmux server would otherwise pass on the caller's GitHub
+# and Discord settings, and the lead would act as the wrong account or bot.
+env_setup="unset GH_CONFIG_DIR DISCORD_STATE_DIR; "
 claude_args="$perm_flag"
 
 if [ "$discord" -eq 1 ]; then
@@ -93,7 +96,7 @@ if [ "$dry_run" -eq 1 ]; then
     else echo "Would refuse: '$session' is already running. Pass --replace to restart it."; exit 0; fi
   fi
   echo "Would run, in $project_dir:"
-  echo "  tmux new-session -d -s $session \"$cmd\""
+  echo "  tmux new-session -d -s $session -c $(printf '%q' "$project_dir") \"$cmd\""
   exit 0
 fi
 
@@ -102,7 +105,7 @@ if [ "$running" -eq 1 ]; then
     echo "Session '$session' is already running. Check it isn't mid-task (tmux capture-pane -t $session -p), then re-run with --replace to restart it." >&2
     exit 1
   fi
-  tmux kill-session -t "=$session"
+  tmux kill-session -t "=$session" 2>/dev/null || true
 fi
 
 tmux new-session -d -s "$session" -c "$project_dir" "$cmd"

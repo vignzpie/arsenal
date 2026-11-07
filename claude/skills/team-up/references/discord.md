@@ -47,7 +47,7 @@ Walk them through it; these steps need their Discord login.
 3. **Check the bot before launching.**
    - The intent is on: `GET /applications/@me` with the bot token, then check that `flags` has bit 18 or 19 set.
    - It's in the server: `GET /users/@me/guilds` lists it.
-4. **Launch with Discord.** `scripts/launch.sh <project-dir> --discord`. This exports `DISCORD_STATE_DIR=<project>/.discord` so the plugin uses this bot and this allowlist.
+4. **Launch with Discord.** `scripts/launch.sh <project-dir> --discord`. If the lead is already running, add `--replace` (check the pane isn't mid-task first). This exports `DISCORD_STATE_DIR=<project>/.discord` so the plugin uses this bot and this allowlist.
 5. **Verify.** After the lead's first turn, read the channel back (the plugin's `fetch_messages`, or the REST API) and confirm the reply is there. A "sent" result alone isn't proof.
 
 ## Gotchas

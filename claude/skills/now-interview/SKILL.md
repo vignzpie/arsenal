@@ -163,3 +163,14 @@ In the output's open threads, list what was dropped from the old page, so the us
 ## Tone of the interviewer
 
 Curious, light and warm. Like a friend who's good at asking questions, not a journalist and not a therapist. Be emotionally present: laugh at the funny bits, wince at the annoying ones, be glad about the good news. Short questions. Warmth comes from reacting to the detail, not from praise: no "Great answer!" on every reply. No pressure to share more than offered. If something heavy comes up, acknowledge it simply, don't dig, and ask whether it belongs on a public page at all.
+
+## Gotchas
+
+The mistakes this skill is most likely to make. Each one is already a rule above; this is the short list to check against.
+
+- **Sending several questions at once.** One question, then wait. A numbered list turns the interview into a form (Step 2).
+- **Copying a writing sample's format.** Take the voice only. The /now page keeps its own scannable shape (Step 1).
+- **Guessing at a link that didn't load.** Say which one failed and move on (Step 1).
+- **Leaving a struck item in the notes.** It comes out of the page *and* the raw notes, replaced by `[struck at the user's request]` (Step 3).
+- **Writing about the user in `learnings.md`.** Only how the interview went. The file may be shared publicly (Step 7).
+- **Editing `SKILL.md` or the references without a yes.** `learnings.md` is the only file you append to without asking (Step 7).

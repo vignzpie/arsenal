@@ -76,6 +76,21 @@ From the spec's guides on [writing skills](https://agentskills.io/skill-creation
 
 Evals (`evals/evals.json`) are worth it for a skill that changes often, and optional.
 
+### Optional parts are modules
+
+*Why: `SKILL.md` loads in full on every run, so a part only some users want, like a chat integration, costs every run that doesn't use it. The spec has no way for one skill to include another, so the split happens inside the skill.*
+
+When a skill has parts that users turn on or leave off (an integration, a second account, a riskier mode), keep them out of the core:
+
+- **The core doesn't know how any module is set up.** Its steps say "for each module that's on, run its section for this step", and it works with every module off. Test: could someone add a new module, say Slack, without editing the core's steps?
+- **One file per module:** `references/<module>.md`. Give every module the same sections in the same order, one per core step it takes part in, then Gotchas. `SKILL.md` has a table of the modules and when to turn each on, and says to read a module's file as soon as it's on. A module that's off is never read.
+- **A gotcha that bites before a module's file is read goes in `SKILL.md`.** Everything else about the module, apart from its table row, stays in its file.
+- **Scripts get hooks, not branches.** If a script behaves differently per module, each module adds a hook file (e.g. `scripts/modules/<module>.sh`) defining the same set of functions, and the script refuses to run if a hook is missing one.
+- **The README lists the modules** and what each one needs.
+- **A module becomes its own skill** only when it's useful without this skill. The spec can't make one skill load another, so after the split this skill can only tell the agent to use the other one.
+
+Don't split a skill that has no optional parts, or whose only option fits in a line or two of a step. A single `references/<topic>.md` for long detail is enough. [`team-up`](../claude/skills/team-up/) is the worked example.
+
 ## Not checked by the gate
 
 Voice and content belong to the tool's owner. The gate covers safety, correctness and fit, not taste.

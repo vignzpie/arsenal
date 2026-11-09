@@ -1,0 +1,56 @@
+{
+  "owner_id": "<your Discord user ID>",
+  "disk": [{ "path": "/", "min_free_pct": 10 }],
+  "alert": {
+    "token_file": "~/projects/ops/.discord/.env",
+    "channel_id": "<alert channel ID>",
+    "repeat_hours": 12,
+    "quiet_hours": "23:00-08:00",
+    "timezone": "Europe/Berlin",
+    "digest_hour": 8,
+    "fallback": true,
+    "on_fail_cmd": ["~/.config/team-health/on-fail.sh"]
+  },
+  "teams": [
+    {
+      "name": "docs-site",
+      "session": "cc-docs-site",
+      "remote_control": false,
+      "boot_unit": "lead-docs-site.service",
+      "discord": {
+        "state_dir": "~/projects/docs-site/.discord",
+        "channel": "<channel ID>",
+        "reply_window_min": 20
+      },
+      "gh": {
+        "config_dir": "~/projects/docs-site/.gh",
+        "login": "docs-bot-account",
+        "repo": "~/projects/docs-site/repo",
+        "require_commit_email": true
+      },
+      "members": [
+        { "name": "link-checker", "kind": "timer", "unit": "link-check.timer", "max_age_min": 90,
+          "log_file": "~/projects/docs-site/logs/link-check.log", "fail_regex": "^ERROR" }
+      ]
+    },
+    {
+      "name": "research",
+      "session": "cc-research",
+      "window": "lead",
+      "remote_control": true,
+      "boot_unit": "lead-research.service",
+      "discord": {
+        "state_dir": "~/projects/research/.discord-lead",
+        "channel": "<shared channel ID>",
+        "require_mention": true
+      },
+      "members": [
+        { "name": "analyst", "kind": "session", "session": "cc-research", "window": "analyst",
+          "discord": { "state_dir": "~/projects/research/.discord-analyst", "channel": "<shared channel ID>" } },
+        { "name": "critic", "kind": "agent", "file": "~/.claude/agents/critic.md" },
+        { "name": "nightly-digest", "kind": "timer", "unit": "digest.timer", "max_age_min": 1500,
+          "status_file": "~/.local/state/digest/status.json" }
+      ]
+    }
+  ]
+}

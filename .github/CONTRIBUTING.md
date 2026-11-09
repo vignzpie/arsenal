@@ -114,6 +114,6 @@ To run the same checks on every `git push`, turn on the repo's hook once per clo
 git config core.hooksPath .githooks
 ```
 
-The hook (`.githooks/pre-push`) checks each commit you push in a temporary git worktree, which it removes afterwards, so uncommitted files don't affect the result. It blocks the push if a check fails. If a tool is missing, it warns and lets the push through. `git push --no-verify` skips it. CI still runs on every PR and is still the gate, because a local hook can be skipped.
+The hook (`.githooks/pre-push`) checks the tip of each branch you push in a temporary git worktree, which it removes afterwards, so uncommitted files don't affect the result. The private check covers every commit since `origin/main`, so fetch first. It blocks the push if a check fails, if a tool is missing, or if `origin/main` isn't there, because a private reference can't be taken back once it's public. Tags and deletions are skipped. `git push --no-verify` skips it. CI still runs on every PR and is still the gate: a local hook can be skipped, and only CI sees the PR's title and description.
 
 The private check in `check.sh` matches patterns such as private links, long chat IDs, home paths and email addresses. It can't recognise a private name it has never seen, so read your own diff too.

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Runs the gate's checks (.github/scripts/check.sh) before a branch push, so a
+# failure shows up here instead of in CI. CI still runs on every PR and is still
+# the gate: it also checks the PR's title and description, which this can't see.
+#
+# Turn it on once per clone:  git config core.hooksPath .githooks
+# Skip it for one push:       git push --no-verify
+#
+# For each branch being pushed, it checks the branch's tip in a temporary git
+# worktree, so uncommitted or untracked files don't change the result. The
+# private-reference check covers every commit since origin/main. Tags and
+# branch deletions are skipped. A missing tool blocks the push, because the
+# private check is the one mistake a public push can't take back.
+
+set -uo pipefail
+
+# Where CONTRIBUTING's install steps put skills-ref.
+PATH="$HOME/.venvs/skills-ref/bin:$PATH"
+# Git sets repo-local variables (GIT_DIR and others) for hooks. Left set, they'd
+# point the temporary worktree's git commands back at this checkout.
+# shellcheck disable=SC2046
+unset $(git rev-parse --local-env-vars)
+
+zero="0000000000000000000000000000000000000000"
+base="origin/main"   # what CI compares against
+
+tmp=""
+cleanup() {
+  [ -z "$tmp" ] || { git worktree remove --force "$tmp" >/dev/null 2>&1; rmdir "$tmp" 2>/dev/null; }
+  tmp=""
+  git worktree prune >/dev/null 2>&1
+}
+trap cleanup EXIT
+
+status=0
+while read -r local_ref local_sha remote_ref _remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue                  # deleting: nothing to check
+  case "$remote_ref" in refs/heads/*) ;; *) continue ;; esac   # tags and other refs: CI doesn't check them either
+  git rev-parse -q --verify "$base^{commit}" >/dev/null || {
+    echo "pre-push: $base not found, so the private check can't run. Run 'git fetch origin', or push with --no-verify." >&2
+    exit 1
+  }
+  sha="$(git rev-parse --short "$local_sha^{commit}")"
+  tmp="$(mktemp -d)"
+  git worktree add --detach -q "$tmp" "$local_sha" </dev/null || { echo "pre-push: couldn't check out $local_ref to check it." >&2; exit 1; }
+  if [ ! -f "$tmp/.github/scripts/check.sh" ]; then
+    echo "pre-push: $local_ref ($sha) has no .github/scripts/check.sh, skipped."
+    cleanup; continue
+  fi
+  echo "pre-push: checking $local_ref ($sha) against $base (fetch first if it's out of date)"
+  (cd "$tmp" && .github/scripts/check.sh --base "$base" </dev/null) | grep -v '^ok '
+  rc="${PIPESTATUS[0]}"
+  cleanup
+  case "$rc" in
+    0) echo "pre-push: all checks passed." ;;
+    2) echo "pre-push: a tool check.sh needs is missing (see above). Install it (see 'Checks you can run' in CONTRIBUTING), or push with --no-verify." >&2; status=1 ;;
+    *) echo "pre-push: checks failed for $local_ref. Fix them, or push with --no-verify and let CI report." >&2; status=1 ;;
+  esac
+done
+
+exit "$status"

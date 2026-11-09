@@ -9,6 +9,8 @@ POST one message to the alert channel set in the config. See --help.
 
 import argparse
 import base64
+import hashlib
+import http.client
 import json
 import os
 import re
@@ -42,14 +44,17 @@ checks (each one runs only when the config gives it something to check):
              read history in its channel, and it answered the owner's last
              message (WARN if not, after reply_window_min, while the pane is idle)
   hearing    each member's bot accepts messages from the lead's bot in the shared
-             channel, and the other way round
+             channel, and the other way round; FAIL if the listener's Discord
+             plugin build ignores all messages from bots
   agent      an on-demand agent's definition file exists with name + description
   timer      a timer is active and enabled; its job's last result, an optional
-             status file, and new lines in an optional log matching fail_regex
+             status file, and lines matching fail_regex added to an optional log
+             since the last --alert run (other runs don't use them up)
   boot       the session's systemd unit is enabled, and restores Remote Control
   gh         the gh login is the expected account; the repo has a local
              commit email
-  host       free disk space; the tmux server is up
+  host       free disk space (skipped with --team); tmux installed and its server
+             up (reported once, not per session)
 
 output:  one line per check on stdout ("FAIL team/member check: detail"), or
          JSON with --json. Diagnostics go to stderr.
@@ -120,6 +125,7 @@ class State:
     def save(self):
         try:
             os.makedirs(self.dir, mode=0o700, exist_ok=True)
+            os.chmod(self.dir, 0o700)
             tmp = self.path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(self.data, f, indent=1, sort_keys=True)
@@ -187,10 +193,28 @@ def find_plugin(table, claude_pid):
     return None
 
 
+def plugin_dir(args):
+    """The Discord plugin's folder, from its process's '--cwd <dir>' argument."""
+    m = re.search(r"--cwd[ =](\S+)", args)
+    return m.group(1) if m else None
+
+
+DROPS_BOTS = re.compile(r"author\.bot\b[^\n]{0,40}\breturn\b")
+
+
+def plugin_drops_bots(directory):
+    """True if this plugin build ignores every message whose author is a bot.
+    None if the source can't be read."""
+    try:
+        with open(os.path.join(directory, "server.ts"), encoding="utf-8") as f:
+            return bool(DROPS_BOTS.search(f.read()))
+    except OSError:
+        return None
+
+
 # ---------------------------------------------------------------- tmux
 
 ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
-DIM_LINE = re.compile(r"^\x1b\[[0-9;]*m?.{0,4}\x1b\[2m")
 
 PANE_FAIL = [
     (re.compile(r"trust the files in this folder|project you created or one you trust", re.I),
@@ -212,7 +236,7 @@ PROMPT = "❯"  # the input box's prompt character
 
 def tmux_sessions():
     code, out, _ = run(["tmux", "list-sessions", "-F", "#{session_name}"])
-    return (code == 0), set(out.split())
+    return (code == 0), set(out.splitlines())
 
 
 def pane_of(target):
@@ -266,11 +290,14 @@ class Discord:
                     return r.status, json.loads(r.read().decode() or "null")
             except urllib.error.HTTPError as e:
                 if e.code == 429:
-                    wait = float(e.headers.get("Retry-After", "1") or 1)
-                    time.sleep(min(wait, 10))
+                    try:
+                        wait = float(e.headers.get("Retry-After", "1") or 1)
+                    except ValueError:
+                        wait = 1.0
+                    time.sleep(min(max(wait, 0), 10))
                     continue
                 return e.code, None
-            except (urllib.error.URLError, OSError, ValueError):
+            except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError):
                 return 0, None
         return 429, None
 
@@ -283,7 +310,7 @@ class Discord:
                 return r.status
         except urllib.error.HTTPError as e:
             return e.code
-        except (urllib.error.URLError, OSError):
+        except (urllib.error.URLError, http.client.HTTPException, OSError):
             return 0
 
 
@@ -334,8 +361,10 @@ def effective_perms(guild, roles, member, channel, bot_id):
 # ---------------------------------------------------------------- checker
 
 class Checker:
-    def __init__(self, cfg, state, report, offline):
+    def __init__(self, cfg, state, report, offline, commit_offsets=False):
         self.cfg = cfg
+        self.commit_offsets = commit_offsets  # only a real --alert run moves log offsets
+        self.plugins = {}  # (team, who) -> Discord plugin folder of that session
         self.state = state
         self.r = report
         self.offline = offline
@@ -357,6 +386,9 @@ class Checker:
             need = float(d.get("min_free_pct", 10))
             st = FAIL if free < need / 2 else WARN if free < need else OK
             self.r.add("host", "", "disk", st, f"{path} {free:.0f}% free (want {need:.0f}%)")
+
+    def tmux_server(self):
+        """One line for a missing tmux or a dead server, instead of one per session."""
         if not shutil.which("tmux"):
             self.r.add("host", "", "tmux", FAIL, "tmux isn't installed or isn't on PATH; sessions can't be checked")
         elif not self.tmux_ok and any(self._targets()):
@@ -364,7 +396,7 @@ class Checker:
                        "no tmux server is running, so every session is down. Relaunch the teams")
 
     def _targets(self):
-        for t in self.cfg.get("teams", []):
+        for t in self.teams:
             if t.get("session"):
                 yield t["session"]
             for m in t.get("members", []):
@@ -378,8 +410,7 @@ class Checker:
         target = name + (":" + str(spec["window"]) if spec.get("window") is not None else "")
         exact = "=" + target  # tmux would otherwise prefix-match "cc" to "cc-other"
         if not self.tmux_ok:
-            self.r.add(team, who, "session", FAIL, f"{target}: tmux server down (see host/tmux)")
-            return None, None
+            return None, None  # reported once, as host/tmux
         if name not in self.sessions:
             self.r.add(team, who, "session", FAIL, f"tmux session {name} isn't running")
             return None, None
@@ -405,7 +436,7 @@ class Checker:
         else:
             self.r.add(team, who, "session", OK, f"{target}: claude running")
         self.pane_warnings(team, who, target, raw, tail)
-        self.channels(team, who, claude, spec)
+        self.channels(team, who, claude, spec, (team, who))
         self.remote_control(team, who, claude, spec)
         return claude, exact
 
@@ -418,6 +449,8 @@ class Checker:
             if rx.search(tail):
                 self.r.add(team, who, "pane", WARN, f"{target}: {msg}")
         text = typed_input(raw)
+        if text:  # store a hash, never the text itself (it could be a pasted secret)
+            text = hashlib.sha256(text.encode()).hexdigest()
         pend = self.state.data["pending_text"]
         if text and pend.get(target) == text and not BUSY.search(tail):
             self.r.add(team, who, "pane", WARN,
@@ -433,14 +466,16 @@ class Checker:
         tail = "\n".join(ANSI.sub("", capture(target)).splitlines()[-8:])
         return bool(BUSY.search(tail))
 
-    def channels(self, team, who, claude, spec):
+    def channels(self, team, who, claude, spec, key):
         args = self.table[claude][2]
         if "--channels" not in args or "discord" not in args:
             if spec.get("discord"):
                 self.r.add(team, who, "channels", FAIL,
                            "a bot is configured but claude runs without --channels for the Discord plugin")
             return
-        if find_plugin(self.table, claude):
+        plugin = find_plugin(self.table, claude)
+        if plugin:
+            self.plugins[key] = plugin_dir(self.table[plugin][2])
             self.r.add(team, who, "channels", OK, "Discord plugin running")
         elif self.table[claude][1] < 60:
             self.r.add(team, who, "channels", SKIP, "claude started under 60s ago; plugin not judged yet")
@@ -453,7 +488,7 @@ class Checker:
         if not spec.get("remote_control"):
             return
         args = self.table[claude][2]
-        if "--remote-control" in args or " --rc" in args:
+        if re.search(r"(^|\s)--(remote-control|rc)(\s|=|$)", args):
             self.r.add(team, who, "rc", OK, "Remote Control on")
         else:
             self.r.add(team, who, "rc", WARN, "configured for Remote Control but running without it")
@@ -488,7 +523,8 @@ class Checker:
             st, app = c.get("/applications/@me")
             if st == 200:
                 flags = app.get("flags", 0)
-                self.state.put(key, flags)
+                if flags & INTENT_BITS:
+                    self.state.put(key, flags)  # cache "on" only, so a fix shows up next run
         if flags is not None and not flags & INTENT_BITS:
             self.r.add(team, who, "discord", FAIL,
                        "Message Content intent is off: turn it on under Bot > Privileged Gateway Intents")
@@ -497,6 +533,9 @@ class Checker:
             self.r.add(team, who, "discord", OK, f"bot {me['username']} token valid")
             return info
         st, ch = c.get(f"/channels/{ch_id}")
+        if st in (0, 429):
+            self.r.add(team, who, "discord", WARN, f"couldn't reach Discord to read channel {ch_id} (status {st})")
+            return info
         if st != 200:
             self.r.add(team, who, "discord", FAIL,
                        f"bot can't see channel {ch_id} (status {st}): invite it to the server or fix channel permissions")
@@ -516,7 +555,7 @@ class Checker:
         st1, guild = c.get(f"/guilds/{gid}")
         st2, roles = c.get(f"/guilds/{gid}/roles")
         st3, member = c.get(f"/guilds/{gid}/members/{bot_id}")
-        if 200 not in (st1,) or st2 != 200 or st3 != 200:
+        if st1 != 200 or st2 != 200 or st3 != 200:
             return []  # can't compute; the channel read above already passed
         p = effective_perms(guild, roles, member, ch, bot_id)
         if p == -1:
@@ -566,13 +605,16 @@ class Checker:
         chan = str(md.get("channel") or ld.get("channel") or "")
         if not lead or not mem or not chan:
             return
-        for speaker, listener, sdir, label in (
-                (lead, mem, expand(md["state_dir"]), "lead -> member"),
-                (mem, lead, expand(ld["state_dir"]), "member -> lead")):
-            self.r.add(team, member, "hearing", *self.hears(listener, speaker, sdir, chan, label))
+        for speaker, listener, sdir, pdir, label in (
+                (lead, mem, expand(md["state_dir"]), self.plugins.get((team, member)), "lead -> member"),
+                (mem, lead, expand(ld["state_dir"]), self.plugins.get((team, "lead")), "member -> lead")):
+            self.r.add(team, member, "hearing", *self.hears(listener, speaker, sdir, chan, label, pdir))
 
     @staticmethod
-    def hears(listener, speaker, sdir, chan, label):
+    def hears(listener, speaker, sdir, chan, label, pdir=None):
+        if pdir and plugin_drops_bots(pdir):
+            return FAIL, (f"{label}: the listener's Discord plugin build ({pdir}) ignores every message "
+                          "from a bot, whatever access.json says; bot-to-bot dispatch can't work with it")
         acc = read_access(sdir)
         if acc is None:
             return FAIL, f"{label}: can't read {sdir}/access.json"
@@ -588,8 +630,8 @@ class Checker:
             how = "a real <@id> mention, a reply to it"
             if acc.get("mentionPatterns"):
                 how += ", or text matching its mentionPatterns"
-            return OK, f"{label}: allowed; needs {how} (plain '@Name' text isn't a mention)"
-        return OK, f"{label}: allowed"
+            return OK, f"{label}: allowed; needs {how} (plain '@Name' text isn't a mention)" + unchecked(pdir)
+        return OK, f"{label}: allowed" + unchecked(pdir)
 
     # -- agents
     def agent(self, team, who, spec):
@@ -633,7 +675,10 @@ class Checker:
             if sp.get("Result") not in (None, "", "success"):
                 problems.append(f"last run of {svc} ended with '{sp['Result']}': journalctl --user -u {svc}")
             last = parse_systemd_time(props.get("LastTriggerUSec", ""))
-            if last and time.time() - last > max_age:
+            if not last:
+                self.r.add(team, who, "timer", WARN, f"{unit} hasn't run yet")
+                return
+            if time.time() - last > max_age:
                 problems.append(f"last ran {int((time.time() - last) / 60)} min ago (expected within {int(max_age / 60)})")
         if spec.get("log_file") and spec.get("fail_regex"):
             hits = self.new_log_hits(expand(spec["log_file"]), spec["fail_regex"])
@@ -657,7 +702,11 @@ class Checker:
             last = parse_iso(last)
         if not isinstance(last, (int, float)) or time.time() - last > max_age:
             out.append(f"status file {path} is stale")
-        if s.get("ok") is False or int(s.get("failures") or 0) > 0:
+        try:
+            failures = int(s.get("failures") or 0)
+        except (TypeError, ValueError):
+            return out + [f"status file {path} has a non-numeric 'failures'"]
+        if s.get("ok") is False or failures > 0:
             out.append(f"last run reported failures ({s.get('failures', '?')})")
         return out
 
@@ -668,9 +717,12 @@ class Checker:
         except OSError:
             return 0
         start = offsets.get(path)
-        offsets[path] = size
         if start is None or start > size:
+            if self.commit_offsets or start is None:
+                offsets[path] = size
             return 0  # first run (or the log was rotated): start counting from here
+        if self.commit_offsets:
+            offsets[path] = size  # other runs report the same lines without using them up
         with open(path, "rb") as f:
             f.seek(start)
             chunk = f.read(size - start).decode("utf-8", "replace")
@@ -685,6 +737,9 @@ class Checker:
                 self.r.add(team, "", "boot", WARN, "no boot_unit configured, so the session won't come back after a reboot")
             return
         code, out, _ = run(["systemctl", "--user", "is-enabled", unit])
+        if code == 127:
+            self.r.add(team, "", "boot", WARN, "systemctl isn't available; boot unit not checked")
+            return
         if out.strip() != "enabled":
             self.r.add(team, "", "boot", WARN,
                        f"{unit} isn't enabled ({out.strip() or 'unknown'}), so the session won't come back after a reboot")
@@ -710,8 +765,8 @@ class Checker:
             return
         code, out, err = run(["gh", "api", "user", "-q", ".login"], env=env)
         want = g.get("login")
-        if code == 0 and out.strip() == want:
-            self.r.add(team, "", "gh", OK, f"gh logged in as {want}")
+        if code == 0 and (want is None or out.strip() == want):
+            self.r.add(team, "", "gh", OK, f"gh logged in as {out.strip()}")
         elif code == 0:
             self.r.add(team, "", "gh", FAIL, f"gh is logged in as {out.strip()}, expected {want}")
         elif code == 127:
@@ -723,7 +778,9 @@ class Checker:
         repo = expand(g.get("repo", ""))
         if repo and g.get("require_commit_email"):
             code, out, _ = run(["git", "-C", repo, "config", "--local", "user.email"])
-            if not out.strip():
+            if code == 127:
+                self.r.add(team, "", "gh", WARN, "git isn't on PATH; commit email not checked")
+            elif not out.strip():
                 self.r.add(team, "", "gh", WARN,
                            f"{repo} has no local user.email, so commits fall back to the global identity")
 
@@ -751,6 +808,10 @@ class Checker:
                 self.timer(name, who, m)
             else:
                 self.r.add(name, who, "config", FAIL, f"unknown member kind '{kind}' (use session, agent or timer)")
+
+
+def unchecked(pdir):
+    return "" if pdir else " (listener's plugin build not checked: its session isn't running)"
 
 
 def snowflake_time(sid):
@@ -787,6 +848,7 @@ def local_now(tz_name):
         from zoneinfo import ZoneInfo
         return datetime.now(ZoneInfo(tz_name)) if tz_name else datetime.now().astimezone()
     except (ImportError, KeyError, ValueError):
+        log(f"alert.timezone '{tz_name}' isn't a known time zone; using the machine's")
         from datetime import datetime
         return datetime.now().astimezone()
 
@@ -809,7 +871,7 @@ def line(i):
     return f"{who}: {i['check']}: {i['detail']}"
 
 
-def alert(cfg, state, report, chk, dry_run):
+def alert(cfg, state, report, chk, dry_run, checked):
     """Decide what to send, then post it (or hold it during quiet hours).
 
     FAILs go out when new or recovered, and again every repeat_hours while still
@@ -819,7 +881,6 @@ def alert(cfg, state, report, chk, dry_run):
     now_ts = time.time()
     now = local_now(a.get("timezone"))
     seen = state.data["alerts"]
-    fails = {f"{i['team']}/{i['member']}/{i['check']}": i for i in report.items if i["status"] == FAIL}
     # Several FAIL lines can share a key (e.g. two pane problems); keep them all.
     by_key = {}
     for i in report.items:
@@ -834,7 +895,8 @@ def alert(cfg, state, report, chk, dry_run):
                 now_ts - prev.get("at", 0) > float(a.get("repeat_hours", 12)) * 3600:
             new += [line(i) for i in items]
             seen[key] = {"at": now_ts, "detail": detail}
-    for key in [k for k in seen if k not in fails]:
+    # Only teams checked in this run can have recovered (a --team run leaves the rest alone).
+    for key in [k for k in seen if k not in by_key and k.split("/", 1)[0] in checked]:
         team, member, check = key.split("/", 2)
         new.append(f"{team}/{member}: {check}: recovered" if member else f"{team}: {check}: recovered")
         del seen[key]
@@ -937,6 +999,46 @@ def write_last(directory, report):
         log(f"warning: couldn't write {directory}/last.json: {e}")
 
 
+def load_config(path):
+    """Read and shape-check the config. Raises ConfigError with a readable message."""
+    try:
+        with open(expand(path), encoding="utf-8") as f:
+            cfg = json.load(f)
+    except OSError as e:
+        raise ConfigError(f"can't read {path}: {e.strerror}. Copy the skill's "
+                          "assets/teams.example.json there and edit it, or pass --config") from None
+    except ValueError as e:
+        raise ConfigError(f"{path} isn't valid JSON: {e}") from None
+    if not isinstance(cfg, dict):
+        raise ConfigError("the top level must be an object with a 'teams' list")
+    teams = cfg.get("teams", [])
+    if not isinstance(teams, list) or not all(isinstance(t, dict) for t in teams):
+        raise ConfigError("'teams' must be a list of objects")
+    for t in teams:
+        if not t.get("name"):
+            raise ConfigError("every team needs a 'name'")
+        members = t.get("members", [])
+        if not isinstance(members, list) or not all(isinstance(m, dict) for m in members):
+            raise ConfigError(f"team {t['name']}: 'members' must be a list of objects")
+        needs = {"session": "session", "agent": "file", "timer": "unit"}
+        for m in members:
+            field = needs.get(m.get("kind", "session"))
+            if field and not m.get(field):
+                raise ConfigError(f"team {t['name']}, member {m.get('name', '?')}: "
+                                  f"a {m.get('kind', 'session')} member needs '{field}'")
+        for spec in [t] + members:
+            if spec.get("discord") is not None and not (isinstance(spec["discord"], dict)
+                                                        and spec["discord"].get("state_dir")):
+                raise ConfigError(f"team {t['name']}: 'discord' needs a 'state_dir'")
+            if spec.get("fail_regex"):
+                re.compile(spec["fail_regex"])
+    return cfg
+
+
+class ConfigError(Exception):
+    pass
+
+
 def main():
     ap = argparse.ArgumentParser(
         prog="team-health.py", formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -947,26 +1049,43 @@ def main():
     ap.add_argument("--team", action="append", help="check only this team (repeatable)")
     ap.add_argument("--json", action="store_true", help="print results as JSON")
     ap.add_argument("--quiet", action="store_true", help="print only WARN and FAIL lines")
-    ap.add_argument("--offline", action="store_true", help="skip every network call (Discord, GitHub)")
+    ap.add_argument("--offline", action="store_true", help="skip every network call (Discord, GitHub); not with --alert")
     ap.add_argument("--no-cache", action="store_true", help="re-check the cached Discord intent")
     ap.add_argument("--alert", action="store_true",
                     help="post new failures, recoveries and the daily warning digest to the config's "
                          "alert channel, and run its on_fail_cmd (a network write)")
-    ap.add_argument("--alert-dry-run", action="store_true", help="print what --alert would post, post nothing")
+    ap.add_argument("--alert-dry-run", action="store_true", help="print what --alert would post and run; post, run and save nothing")
     ap.add_argument("--state-dir", default=DEFAULT_STATE, help="cache and last-run state (default: %(default)s)")
     ap.add_argument("--version", action="version", version=f"team-health {VERSION}")
     args = ap.parse_args()
+    if args.offline and args.alert:
+        ap.error("--alert posts to Discord, so it can't be combined with --offline (use --alert-dry-run)")
 
+    cfg = None
     try:
-        with open(expand(args.config), encoding="utf-8") as f:
-            cfg = json.load(f)
-    except OSError as e:
-        log(f"Can't read config {args.config}: {e.strerror}. Copy the skill's "
-            "assets/teams.example.json there and edit it, or pass --config.")
+        cfg = load_config(args.config)
+        return check(args, cfg)
+    except (ConfigError, KeyError, TypeError, ValueError, AttributeError, re.error) as e:
+        msg = f"config error: {e}; check it against references/config.md"
+        log(msg)
+        if args.alert and isinstance(cfg, dict):
+            notify_config_error(cfg, msg)
         return 2
-    except ValueError as e:
-        log(f"Config {args.config} isn't valid JSON: {e}")
-        return 2
+
+
+def notify_config_error(cfg, msg):
+    """A broken config must not go quiet on a timer: post it, best effort."""
+    try:
+        a = cfg.get("alert") or {}
+        token = read_token_file(expand(a.get("token_file", "")))
+        if token and a.get("channel_id"):
+            Discord(token).post(f"/channels/{a['channel_id']}/messages",
+                                {"content": f"team-health: {msg}", "allowed_mentions": {"parse": []}})
+    except (AttributeError, TypeError, ValueError, OSError):
+        pass
+
+
+def check(args, cfg):
     teams = cfg.get("teams", [])
     if args.team:
         unknown = set(args.team) - {t.get("name") for t in teams}
@@ -975,16 +1094,17 @@ def main():
                 f"{', '.join(t.get('name', '?') for t in teams) or 'none'}")
             return 2
         teams = [t for t in teams if t.get("name") in args.team]
-    for t in teams:
-        if not t.get("name"):
-            log("Every team in the config needs a 'name'.")
-            return 2
 
+    real_alert = args.alert and not args.alert_dry_run
     state = State(args.state_dir, use_cache=not args.no_cache)
     report = Report()
-    chk = Checker(cfg, state, report, args.offline)
+    chk = Checker(cfg, state, report, args.offline, commit_offsets=real_alert)
+    chk.teams = teams
+    checked = {t["name"] for t in teams}
+    chk.tmux_server()
     if not args.team:
         chk.host()
+        checked.add("host")
     for t in teams:
         chk.team(t)
 
@@ -1000,11 +1120,10 @@ def main():
         if not args.quiet or n[FAIL] or n[WARN]:
             print(f"-- {n[FAIL]} fail, {n[WARN]} warn, {n[OK]} ok")
     if args.alert_dry_run:
-        kept = json.loads(json.dumps(state.data))
-        alert(cfg, state, report, chk, dry_run=True)
-        state.data = kept  # a dry run changes nothing, including what counts as already sent
-    elif args.alert:
-        alert(cfg, state, report, chk, dry_run=False)
+        alert(cfg, state, report, chk, dry_run=True, checked=checked)
+        return 1 if report.worst() == RANK[FAIL] else 0  # a dry run writes nothing
+    if real_alert:
+        alert(cfg, state, report, chk, dry_run=False, checked=checked)
     write_last(args.state_dir, report)
     state.save()
     return 1 if report.worst() == RANK[FAIL] else 0

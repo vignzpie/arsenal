@@ -1,0 +1,11 @@
+[Unit]
+Description=team-health: check Claude Code teams and alert on failure
+
+[Service]
+Type=oneshot
+# Exit code 1 means a check failed; that's reported through --alert, not a unit failure.
+SuccessExitStatus=1
+# systemd gives services a short PATH; add the folders tmux, gh and git live in.
+Environment=PATH=/usr/local/bin:/usr/bin:/bin:%h/.local/bin
+# Point this at wherever the skill is installed.
+ExecStart=/usr/bin/env python3 %h/.claude/skills/team-health/scripts/team-health.py --quiet --alert
